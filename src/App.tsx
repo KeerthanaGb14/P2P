@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from './hooks/useAuth';
 import { useSimulation } from './hooks/useSimulation';
 import { useResearchData } from './hooks/useResearchData';
+import { isSupabaseConfigured } from './lib/supabase';
 import Header from './components/Header';
 import AuthModal from './components/AuthModal';
 import UserProfile from './components/UserProfile';
@@ -37,13 +38,13 @@ function App() {
   });
 
   const handleStart = async () => {
-    if (!user || !profile) {
+    if (isSupabaseConfigured() && (!user || !profile)) {
       setShowAuthModal(true);
       return;
     }
     
     try {
-      await startSimulation(config, profile.id);
+      await startSimulation(config, profile?.id || 'demo-user');
     } catch (error) {
       console.error('Failed to start simulation:', error);
     }
@@ -148,9 +149,9 @@ function App() {
         )}
 
         {/* User's Simulation History */}
-        {user && profile && (
+        {(user && profile) || !isSupabaseConfigured() ? (
           <SimulationHistory />
-        )}
+        ) : null}
 
         {/* Research Highlights */}
         <ResearchHighlights researchData={researchData} />

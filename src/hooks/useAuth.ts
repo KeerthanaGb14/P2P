@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { User as AuthUser } from '@supabase/supabase-js'
-import { supabase, User } from '../lib/supabase'
+import { supabase, User, isSupabaseConfigured } from '../lib/supabase'
 
 export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -8,6 +8,12 @@ export function useAuth() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // If Supabase is not configured, set loading to false and return
+    if (!isSupabaseConfigured()) {
+      setLoading(false)
+      return
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
@@ -35,6 +41,8 @@ export function useAuth() {
   }, [])
 
   const fetchProfile = async (authId: string) => {
+    if (!isSupabaseConfigured()) return
+    
     try {
       const { data, error } = await supabase
         .from('users')
@@ -58,6 +66,8 @@ export function useAuth() {
   }
 
   const createProfile = async (authId: string) => {
+    if (!isSupabaseConfigured()) return
+    
     try {
       const { data, error } = await supabase
         .from('users')
@@ -78,6 +88,10 @@ export function useAuth() {
   }
 
   const signIn = async (email: string, password: string) => {
+    if (!isSupabaseConfigured()) {
+      return { error: { message: 'Supabase not configured. Please set up your environment variables.' } }
+    }
+    
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -86,6 +100,10 @@ export function useAuth() {
   }
 
   const signUp = async (email: string, password: string, fullName?: string) => {
+    if (!isSupabaseConfigured()) {
+      return { error: { message: 'Supabase not configured. Please set up your environment variables.' } }
+    }
+    
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -99,6 +117,10 @@ export function useAuth() {
   }
 
   const signOut = async () => {
+    if (!isSupabaseConfigured()) {
+      return { error: null }
+    }
+    
     const { error } = await supabase.auth.signOut()
     return { error }
   }

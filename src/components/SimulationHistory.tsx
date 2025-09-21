@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Clock, Play, CheckCircle, XCircle, Users, Zap } from 'lucide-react'
-import { supabase, Simulation } from '../lib/supabase'
+import { supabase, Simulation, isSupabaseConfigured } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 
 const SimulationHistory: React.FC = () => {
@@ -9,12 +9,19 @@ const SimulationHistory: React.FC = () => {
   const { profile } = useAuth()
 
   useEffect(() => {
-    if (profile) {
+    if (profile && isSupabaseConfigured()) {
       fetchSimulations()
+    } else {
+      setLoading(false)
     }
   }, [profile])
 
   const fetchSimulations = async () => {
+    if (!isSupabaseConfigured()) {
+      setLoading(false)
+      return
+    }
+    
     try {
       const { data, error } = await supabase
         .from('simulations')
@@ -74,6 +81,18 @@ const SimulationHistory: React.FC = () => {
     )
   }
 
+  if (!isSupabaseConfigured()) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+        <h3 className="text-xl font-semibold text-gray-800 mb-6">Simulation History</h3>
+        <div className="text-center py-8">
+          <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500 mb-2">Simulation history requires Supabase configuration.</p>
+          <p className="text-sm text-gray-400">Connect to Supabase to save and view your simulation history.</p>
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
       <h3 className="text-xl font-semibold text-gray-800 mb-6">Simulation History</h3>

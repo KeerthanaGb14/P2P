@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase, SimulationRun, PeerData, MetricData } from '../lib/supabase'
+import { supabase, SimulationRun, PeerData, MetricData, isSupabaseConfigured } from '../lib/supabase'
 import { SimulationConfig } from '../types'
+import { ANATESimulation } from '../utils/simulation'
 
 export function useSimulation() {
   const [currentRun, setCurrentRun] = useState<SimulationRun | null>(null)
@@ -8,28 +9,71 @@ export function useSimulation() {
   const [metrics, setMetrics] = useState<MetricData[]>([])
   const [isRunning, setIsRunning] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [localSimulation, setLocalSimulation] = useState<ANATESimulation | null>(null)
 
   const startSimulation = useCallback(async (config: SimulationConfig, userId: string) => {
     setLoading(true)
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/simulation-engine/start`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ config, userId })
-      })
+      if (isSupabaseConfigured()) {
+        // Use Supabase backend
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/simulation-engine/start`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ config, userId })
+        })
 
-      const result = await response.json()
-      if (response.ok) {
-        setCurrentRun({ ...result, config })
-        setIsRunning(true)
-        
-        // Start real-time subscriptions
-        subscribeToUpdates(result.runId)
+        const result = await response.json()
+        if (response.ok) {
+          setCurrentRun({ ...result, config })
+          setIsRunning(true)
+          subscribeToUpdates(result.runId)
+        } else {
+          throw new Error(result.error)
+        }
       } else {
-        throw new Error(result.error)
+        // Use local simulation
+        const simulation = new ANATESimulation(config)
+        setLocalSimulation(simulation)
+        setCurrentRun({
+          id: 'local-run',
+          simulation_id: 'local-sim',
+          run_number: 1,
+          config,
+          start_time: new Date().toISOString(),
+          status: 'running' as const,
+          results: {},
+          created_at: new Date().toISOString()
+        })
+        setIsRunning(true)
+        simulation.startSimulation()
+        
+        // Convert local peers to database format
+        const localPeers = simulation.getPeers().map(peer => ({
+          id: peer.id,
+          simulation_run_id: 'local-run',
+          peer_id: peer.id,
+          ip_address: peer.ip,
+          port: peer.port,
+          region: peer.region,
+          is_seeder: peer.isSeeder,
+          upload_speed: peer.uploadSpeed,
+          download_speed: peer.downloadSpeed,
+          bandwidth: peer.bandwidth,
+          stability_score: peer.stability,
+          churn_rate: peer.churnRate,
+          download_progress: peer.downloadProgress,
+          connection_time: new Date(peer.connectionTime).toISOString(),
+          last_seen: new Date().toISOString(),
+          metadata: {},
+          created_at: new Date().toISOString()
+        }))
+        setPeers(localPeers)
+        
+        // Start local simulation loop
+        startLocalSimulationLoop(simulation)
       }
     } catch (error) {
       console.error('Error starting simulation:', error)
@@ -39,28 +83,89 @@ export function useSimulation() {
     }
   }, [])
 
+  const startLocalSimulationLoop = useCallback((simulation: ANATESimulation) => {
+    const interval = setInterval(() => {
+      if (!isRunning) {
+        clearInterval(interval)
+        return
+      }
+      
+      simulation.updateSimulation()
+      
+      // Update peers
+      const updatedPeers = simulation.getPeers().map(peer => ({
+        id: peer.id,
+        simulation_run_id: 'local-run',
+        peer_id: peer.id,
+        ip_address: peer.ip,
+        port: peer.port,
+        region: peer.region,
+        is_seeder: peer.isSeeder,
+        upload_speed: peer.uploadSpeed,
+        download_speed: peer.downloadSpeed,
+        bandwidth: peer.bandwidth,
+        stability_score: peer.stability,
+        churn_rate: peer.churnRate,
+        download_progress: peer.downloadProgress,
+        connection_time: new Date(peer.connectionTime).toISOString(),
+        last_seen: new Date().toISOString(),
+        metadata: {},
+        created_at: new Date().toISOString()
+      }))
+      setPeers(updatedPeers)
+      
+      // Update metrics
+      const simMetrics = simulation.getMetrics()
+      const metricsData = [
+        { metric_type: 'total_peers', value: simMetrics.totalPeers },
+        { metric_type: 'seeders', value: simMetrics.seeders },
+        { metric_type: 'leechers', value: simMetrics.leechers },
+        { metric_type: 'avg_download_speed', value: simMetrics.averageDownloadSpeed },
+        { metric_type: 'completion_rate', value: simMetrics.completionRate }
+      ]
+      setMetrics(metricsData)
+    }, 2000)
+    
+    // Stop after 60 seconds
+    setTimeout(() => {
+      clearInterval(interval)
+      setIsRunning(false)
+      simulation.stopSimulation()
+    }, 60000)
+  }, [isRunning])
+
   const stopSimulation = useCallback(async () => {
     if (!currentRun) return
 
-    try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/simulation-engine/stop`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ runId: currentRun.id })
-      })
+    if (isSupabaseConfigured()) {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/simulation-engine/stop`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ runId: currentRun.id })
+        })
 
-      if (response.ok) {
-        setIsRunning(false)
+        if (response.ok) {
+          setIsRunning(false)
+        }
+      } catch (error) {
+        console.error('Error stopping simulation:', error)
       }
-    } catch (error) {
-      console.error('Error stopping simulation:', error)
+    } else {
+      // Stop local simulation
+      if (localSimulation) {
+        localSimulation.stopSimulation()
+      }
+      setIsRunning(false)
     }
-  }, [currentRun])
+  }, [currentRun, localSimulation])
 
   const subscribeToUpdates = useCallback((runId: string) => {
+    if (!isSupabaseConfigured()) return
+    
     // Subscribe to peer updates
     const peerSubscription = supabase
       .channel(`peers:${runId}`)
@@ -112,28 +217,30 @@ export function useSimulation() {
     setPeers([])
     setMetrics([])
     setIsRunning(false)
+    setLocalSimulation(null)
   }, [])
 
   // Get latest metrics aggregated by type
   const getLatestMetrics = useCallback(() => {
-    const latestMetrics: { [key: string]: number } = {}
-    
-    metrics.forEach(metric => {
-      if (!latestMetrics[metric.metric_type] || 
-          new Date(metric.timestamp) > new Date(latestMetrics[metric.metric_type + '_timestamp'] || 0)) {
+    if (Array.isArray(metrics)) {
+      // Handle array format (from local simulation)
+      const latestMetrics: { [key: string]: number } = {}
+      metrics.forEach((metric: any) => {
         latestMetrics[metric.metric_type] = metric.value
-        latestMetrics[metric.metric_type + '_timestamp'] = metric.timestamp
-      }
-    })
+      })
+      return latestMetrics
+    } else {
+      // Handle object format (from Supabase)
+      const latestMetrics: { [key: string]: number } = {}
+      
+      Object.entries(metrics).forEach(([key, value]) => {
+        if (typeof value === 'number') {
+          latestMetrics[key] = value
+        }
+      })
 
-    // Clean up timestamp keys
-    Object.keys(latestMetrics).forEach(key => {
-      if (key.endsWith('_timestamp')) {
-        delete latestMetrics[key]
-      }
-    })
-
-    return latestMetrics
+      return latestMetrics
+    }
   }, [metrics])
 
   return {
