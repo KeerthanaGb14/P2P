@@ -5,6 +5,7 @@ import { SimulationConfig } from '../types';
 interface SimulationControlsProps {
   config: SimulationConfig;
   isRunning: boolean;
+  loading?: boolean;
   onConfigChange: (config: SimulationConfig) => void;
   onStart: () => void;
   onStop: () => void;
@@ -14,6 +15,7 @@ interface SimulationControlsProps {
 const SimulationControls: React.FC<SimulationControlsProps> = ({
   config,
   isRunning,
+  loading = false,
   onConfigChange,
   onStart,
   onStop,
@@ -34,18 +36,36 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
         <div className="flex items-center space-x-3">
           <button
             onClick={isRunning ? onStop : onStart}
+            disabled={loading}
             className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-              isRunning
+              loading
+                ? 'bg-gray-400 text-white cursor-not-allowed'
+                : isRunning
                 ? 'bg-red-500 hover:bg-red-600 text-white'
                 : 'bg-green-500 hover:bg-green-600 text-white'
             }`}
           >
-            {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-            <span>{isRunning ? 'Pause' : 'Start'}</span>
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Starting...</span>
+              </>
+            ) : isRunning ? (
+              <>
+                <Pause className="w-4 h-4" />
+                <span>Stop</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4" />
+                <span>Start</span>
+              </>
+            )}
           </button>
           
           <button
             onClick={onReset}
+            disabled={loading || isRunning}
             className="flex items-center space-x-2 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-all duration-200"
           >
             <RotateCcw className="w-4 h-4" />

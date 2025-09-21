@@ -1,7 +1,12 @@
 import React from 'react';
 import { BookOpen, Target, Lightbulb, Award, TrendingUp, Users } from 'lucide-react';
+import { ResearchData } from '../lib/supabase';
 
-const ResearchHighlights: React.FC = () => {
+interface ResearchHighlightsProps {
+  researchData: ResearchData[];
+}
+
+const ResearchHighlights: React.FC<ResearchHighlightsProps> = ({ researchData }) => {
   const highlights = [
     {
       icon: Target,
@@ -35,6 +40,12 @@ const ResearchHighlights: React.FC = () => {
     "Designing efficient broadcast-aware caching mechanisms",
     "Optimizing swarm stability across heterogeneous network conditions"
   ];
+
+  // Get performance metrics from research data
+  const performanceMetrics = researchData.filter(item => item.category === 'Performance');
+  const redundancyMetric = performanceMetrics.find(item => item.metric_name.includes('Redundant'));
+  const downloadMetric = performanceMetrics.find(item => item.metric_name.includes('Download'));
+  const stabilityMetric = researchData.find(item => item.category === 'Stability');
 
   return (
     <div className="space-y-8">
@@ -91,18 +102,30 @@ const ResearchHighlights: React.FC = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-lg p-6 text-center">
-            <div className="text-3xl font-bold text-green-600 mb-2">69%</div>
-            <div className="text-gray-600">Reduction in Redundant Packet Transfers</div>
+            <div className="text-3xl font-bold text-green-600 mb-2">
+              {redundancyMetric?.improvement_percentage.toFixed(0) || '69'}%
+            </div>
+            <div className="text-gray-600">
+              {redundancyMetric?.description || 'Reduction in Redundant Packet Transfers'}
+            </div>
           </div>
           
           <div className="bg-white rounded-lg p-6 text-center">
-            <div className="text-3xl font-bold text-blue-600 mb-2">57%</div>
-            <div className="text-gray-600">Decrease in Overall Download Time</div>
+            <div className="text-3xl font-bold text-blue-600 mb-2">
+              {downloadMetric?.improvement_percentage.toFixed(0) || '57'}%
+            </div>
+            <div className="text-gray-600">
+              {downloadMetric?.description || 'Decrease in Overall Download Time'}
+            </div>
           </div>
           
           <div className="bg-white rounded-lg p-6 text-center">
-            <div className="text-3xl font-bold text-purple-600 mb-2">85%</div>
-            <div className="text-gray-600">Improved Swarm Stability Score</div>
+            <div className="text-3xl font-bold text-purple-600 mb-2">
+              {stabilityMetric?.anate_value.toFixed(0) || '85'}%
+            </div>
+            <div className="text-gray-600">
+              {stabilityMetric?.description || 'Improved Swarm Stability Score'}
+            </div>
           </div>
         </div>
       </div>
