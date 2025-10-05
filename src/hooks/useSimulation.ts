@@ -15,24 +15,32 @@ export function useSimulation() {
     setLoading(true)
     try {
       if (isSupabaseConfigured()) {
-        // Use Supabase backend
+        // Get the user's session token
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session) {
+          throw new Error('Not authenticated')
+        }
+  
+        // Use Supabase backend with USER'S JWT token, not anon key
         const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/simulation-engine/start`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Authorization': `Bearer ${session.access_token}`, // Use user's JWT token
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ config, userId })
+          body: JSON.stringify({ config }) // Remove userId - it comes from JWT
         })
-
-        const result = await response.json()
-        if (response.ok) {
-          setCurrentRun({ ...result, config })
-          setIsRunning(true)
-          subscribeToUpdates(result.runId)
-        } else {
-          throw new Error(result.error)
+  
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to start simulation')
         }
+  
+        const result = await response.json()
+        setCurrentRun({ ...result, config })
+        setIsRunning(true)
+        subscribeToUpdates(result.runId)
       } else {
         // Use local simulation
         const simulation = new ANATESimulation(config)
@@ -136,20 +144,30 @@ export function useSimulation() {
 
   const stopSimulation = useCallback(async () => {
     if (!currentRun) return
-
+  
     if (isSupabaseConfigured()) {
       try {
+        // Get the user's session token
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session) {
+          throw new Error('Not authenticated')
+        }
+  
         const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/simulation-engine/stop`, {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Authorization': `Bearer ${session.access_token}`, // Use user's JWT token
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ runId: currentRun.id })
         })
-
+  
         if (response.ok) {
           setIsRunning(false)
+        } else {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to stop simulation')
         }
       } catch (error) {
         console.error('Error stopping simulation:', error)
