@@ -1,12 +1,7 @@
 import React from 'react';
 import { Network, Zap, BarChart3 } from 'lucide-react';
-import { isSupabaseConfigured } from '../lib/supabase';
 
-interface HeaderProps {
-  children?: React.ReactNode;
-}
-
-const Header: React.FC<HeaderProps> = ({ children }) => {
+const Header: React.FC = () => {
   return (
     <header className="bg-gradient-to-r from-blue-900 via-purple-900 to-indigo-900 text-white">
       <div className="container mx-auto px-6 py-8">
@@ -24,12 +19,9 @@ const Header: React.FC<HeaderProps> = ({ children }) => {
           </div>
           
           <div className="flex items-center space-x-6">
-            {children}
-            {!isSupabaseConfigured() && (
-              <div className="flex items-center space-x-2 bg-yellow-500/20 px-4 py-2 rounded-lg backdrop-blur-sm border border-yellow-400/30">
-                <span className="text-sm font-medium text-yellow-200">Demo Mode</span>
-              </div>
-            )}
+            <div className="flex items-center space-x-2 bg-blue-500/20 px-4 py-2 rounded-lg backdrop-blur-sm border border-blue-400/30">
+              <span className="text-sm font-medium text-blue-200">Local Simulation</span>
+            </div>
             <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-lg backdrop-blur-sm">
               <Zap className="w-5 h-5 text-yellow-300" />
               <span className="text-sm font-medium">69% Less Redundancy</span>

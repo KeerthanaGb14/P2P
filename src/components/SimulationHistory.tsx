@@ -1,49 +1,34 @@
 import React, { useState, useEffect } from 'react'
 import { Clock, Play, CheckCircle, XCircle, Users, Zap } from 'lucide-react'
-import { supabase, Simulation, isSupabaseConfigured } from '../lib/supabase'
-import { useAuth } from '../hooks/useAuth'
 
 const SimulationHistory: React.FC = () => {
-  const [simulations, setSimulations] = useState<Simulation[]>([])
-  const [loading, setLoading] = useState(true)
-  const { profile } = useAuth()
-
-  useEffect(() => {
-    if (profile && isSupabaseConfigured()) {
-      fetchSimulations()
-    } else {
-      setLoading(false)
+  // Mock simulation history for local mode
+  const mockSimulations = [
+    {
+      id: '1',
+      name: 'ANATE Performance Test',
+      description: 'Testing ANATE with 100 peers under moderate network conditions',
+      status: 'completed',
+      created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+      config: { useANATE: true, peerCount: 100 }
+    },
+    {
+      id: '2', 
+      name: 'Traditional BitTorrent Baseline',
+      description: 'Baseline test with traditional BitTorrent protocol',
+      status: 'completed',
+      created_at: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+      config: { useANATE: false, peerCount: 100 }
+    },
+    {
+      id: '3',
+      name: 'Large Scale ANATE Test',
+      description: 'Testing ANATE scalability with 200 peers',
+      status: 'completed', 
+      created_at: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+      config: { useANATE: true, peerCount: 200 }
     }
-  }, [profile])
-
-  const fetchSimulations = async () => {
-    if (!isSupabaseConfigured()) {
-      setLoading(false)
-      return
-    }
-    
-    try {
-      const { data, error } = await supabase
-        .from('simulations')
-        .select(`
-          *,
-          simulation_runs(
-            *,
-            metrics(*)
-          )
-        `)
-        .eq('user_id', profile?.id)
-        .order('created_at', { ascending: false })
-        .limit(10)
-
-      if (error) throw error
-      setSimulations(data || [])
-    } catch (error) {
-      console.error('Error fetching simulations:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  ]
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -68,85 +53,51 @@ const SimulationHistory: React.FC = () => {
     })
   }
 
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-200 rounded w-1/3"></div>
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-16 bg-gray-100 rounded"></div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  if (!isSupabaseConfigured()) {
-    return (
-      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-        <h3 className="text-xl font-semibold text-gray-800 mb-6">Simulation History</h3>
-        <div className="text-center py-8">
-          <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 mb-2">Simulation history requires Supabase configuration.</p>
-          <p className="text-sm text-gray-400">Connect to Supabase to save and view your simulation history.</p>
-        </div>
-      </div>
-    )
-  }
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
       <h3 className="text-xl font-semibold text-gray-800 mb-6">Simulation History</h3>
       
-      {simulations.length === 0 ? (
-        <div className="text-center py-8">
-          <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">No simulations yet. Start your first simulation to see results here.</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {simulations.map((simulation) => (
-            <div
-              key={simulation.id}
-              className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-3">
-                  {getStatusIcon(simulation.status)}
-                  <div>
-                    <h4 className="font-medium text-gray-800">{simulation.name}</h4>
-                    <p className="text-sm text-gray-500">{formatDate(simulation.created_at)}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4 text-sm">
-                  {simulation.config?.useANATE ? (
-                    <div className="flex items-center space-x-1 text-blue-600">
-                      <Zap className="w-4 h-4" />
-                      <span>ANATE</span>
-                    </div>
-                  ) : (
-                    <span className="text-gray-600">Traditional</span>
-                  )}
-                  <div className="flex items-center space-x-1 text-gray-600">
-                    <Users className="w-4 h-4" />
-                    <span>{simulation.config?.peerCount || 0} peers</span>
-                  </div>
+      <div className="space-y-4">
+        {mockSimulations.map((simulation) => (
+          <div
+            key={simulation.id}
+            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                {getStatusIcon(simulation.status)}
+                <div>
+                  <h4 className="font-medium text-gray-800">{simulation.name}</h4>
+                  <p className="text-sm text-gray-500">{formatDate(simulation.created_at)}</p>
                 </div>
               </div>
-              
-              {simulation.description && (
-                <p className="text-gray-600 text-sm mb-3">{simulation.description}</p>
-              )}
-              
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Status: <span className="capitalize">{simulation.status}</span></span>
-                <span>
-                  Runs: {(simulation as any).simulation_runs?.length || 0}
-                </span>
+              <div className="flex items-center space-x-4 text-sm">
+                {simulation.config?.useANATE ? (
+                  <div className="flex items-center space-x-1 text-blue-600">
+                    <Zap className="w-4 h-4" />
+                    <span>ANATE</span>
+                  </div>
+                ) : (
+                  <span className="text-gray-600">Traditional</span>
+                )}
+                <div className="flex items-center space-x-1 text-gray-600">
+                  <Users className="w-4 h-4" />
+                  <span>{simulation.config?.peerCount || 0} peers</span>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+            
+            {simulation.description && (
+              <p className="text-gray-600 text-sm mb-3">{simulation.description}</p>
+            )}
+            
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <span>Status: <span className="capitalize">{simulation.status}</span></span>
+              <span>Runs: 1</span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

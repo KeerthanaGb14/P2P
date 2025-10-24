@@ -1,11 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from './hooks/useAuth';
 import { useSimulation } from './hooks/useSimulation';
 import { useResearchData } from './hooks/useResearchData';
-import { isSupabaseConfigured } from './lib/supabase';
 import Header from './components/Header';
-import AuthModal from './components/AuthModal';
-import UserProfile from './components/UserProfile';
 import SimulationHistory from './components/SimulationHistory';
 import RealTimeMetrics from './components/RealTimeMetrics';
 import SimulationControls from './components/SimulationControls';
@@ -15,7 +11,6 @@ import ResearchHighlights from './components/ResearchHighlights';
 import { SimulationConfig } from './types';
 
 function App() {
-  const { user, profile, loading: authLoading } = useAuth();
   const { 
     currentRun, 
     peers, 
@@ -28,7 +23,6 @@ function App() {
   } = useSimulation();
   const { researchData } = useResearchData();
   
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const [config, setConfig] = useState<SimulationConfig>({
     peerCount: 50,
     fileSize: 1000,
@@ -38,13 +32,8 @@ function App() {
   });
 
   const handleStart = async () => {
-    if (isSupabaseConfigured() && (!user || !profile)) {
-      setShowAuthModal(true);
-      return;
-    }
-    
     try {
-      await startSimulation(config, profile?.id || 'demo-user');
+      await startSimulation(config, 'demo-user');
     } catch (error) {
       console.error('Failed to start simulation:', error);
     }
@@ -69,8 +58,8 @@ function App() {
     leechers: metrics.leechers || 0,
     averageDownloadSpeed: metrics.avg_download_speed || 0,
     averageUploadSpeed: metrics.avg_upload_speed || 0,
-    swarmStability: 85, // Static for now
-    redundantTransfers: config.useANATE ? 31 : 100,
+    swarmStability: metrics.swarm_stability || 0,
+    redundantTransfers: metrics.redundant_transfers || 0,
     completionRate: metrics.completion_rate || 0,
   };
 
@@ -82,31 +71,9 @@ function App() {
     packetTransferEfficiency: config.useANATE ? 92 : 65,
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header>
-        {user ? (
-          <UserProfile />
-        ) : (
-          <button
-            onClick={() => setShowAuthModal(true)}
-            className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-          >
-            Sign In
-          </button>
-        )}
-      </Header>
+      <Header />
       
       <main className="container mx-auto px-6 py-8 space-y-8">
         {/* Simulation Controls */}
@@ -148,10 +115,8 @@ function App() {
           }))} />
         )}
 
-        {/* User's Simulation History */}
-        {(user && profile) || !isSupabaseConfigured() ? (
-          <SimulationHistory />
-        ) : null}
+        {/* Simulation History */}
+        <SimulationHistory />
 
         {/* Research Highlights */}
         <ResearchHighlights researchData={researchData} />
@@ -175,12 +140,6 @@ function App() {
           </div>
         </div>
       </footer>
-
-      {/* Auth Modal */}
-      <AuthModal 
-        isOpen={showAuthModal} 
-        onClose={() => setShowAuthModal(false)} 
-      />
     </div>
   );
 }
