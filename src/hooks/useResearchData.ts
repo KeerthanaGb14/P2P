@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase, ResearchData, isSupabaseConfigured } from '../lib/supabase'
+import { ResearchData } from '../lib/supabase'
 
 // Mock research data for when Supabase is not configured
 const mockResearchData: ResearchData[] = [
@@ -74,18 +74,8 @@ export function useResearchData() {
     try {
       setLoading(true)
       
-      if (isSupabaseConfigured()) {
-        const { data, error } = await supabase
-          .from('research_data')
-          .select('*')
-          .order('category', { ascending: true })
-
-        if (error) throw error
-        setResearchData(data || [])
-      } else {
-        // Use mock data when Supabase is not configured
-        setResearchData(mockResearchData)
-      }
+      // Always use mock data in local mode
+      setResearchData(mockResearchData)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
       // Fallback to mock data on error

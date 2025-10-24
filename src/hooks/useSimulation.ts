@@ -129,6 +129,9 @@ export function useSimulation() {
         { metric_type: 'seeders', value: simMetrics.seeders },
         { metric_type: 'leechers', value: simMetrics.leechers },
         { metric_type: 'avg_download_speed', value: simMetrics.averageDownloadSpeed },
+        { metric_type: 'avg_upload_speed', value: simMetrics.averageUploadSpeed },
+        { metric_type: 'swarm_stability', value: simMetrics.swarmStability },
+        { metric_type: 'redundant_transfers', value: simMetrics.redundantTransfers },
         { metric_type: 'completion_rate', value: simMetrics.completionRate }
       ]
       setMetrics(metricsData)
