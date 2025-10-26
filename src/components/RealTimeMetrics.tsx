@@ -1,6 +1,6 @@
 import React from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
-import { TrendingUp, TrendingDown, Activity } from 'lucide-react'
+import { TrendingUp, TrendingDown, Activity, Zap, Users, Download } from 'lucide-react'
 
 interface RealTimeMetricsProps {
   metrics: { [key: string]: number }
@@ -28,13 +28,13 @@ const RealTimeMetrics: React.FC<RealTimeMetricsProps> = ({ metrics, historicalDa
     {
       key: 'total_peers',
       label: 'Total Peers',
-      icon: Activity,
+      icon: Users,
       color: 'blue'
     },
     {
       key: 'avg_download_speed',
       label: 'Avg Download Speed',
-      icon: TrendingUp,
+      icon: Download,
       color: 'green'
     },
     {
@@ -46,13 +46,13 @@ const RealTimeMetrics: React.FC<RealTimeMetricsProps> = ({ metrics, historicalDa
     {
       key: 'seeders',
       label: 'Seeders',
-      icon: TrendingUp,
+      icon: Zap,
       color: 'emerald'
     }
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       {/* Real-time Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {metricCards.map(({ key, label, icon: Icon, color }) => {
@@ -65,17 +65,26 @@ const RealTimeMetrics: React.FC<RealTimeMetricsProps> = ({ metrics, historicalDa
           }
 
           return (
-            <div key={key} className="bg-white rounded-lg border border-gray-200 p-4">
+            <div key={key} className="bg-white rounded-lg border border-gray-200 p-4 transform hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md">
               <div className="flex items-center justify-between mb-2">
-                <div className={`p-2 rounded-lg ${colorClasses[color as keyof typeof colorClasses]}`}>
-                  <Icon className="w-5 h-5" />
+                <div className={`p-2 rounded-lg ${colorClasses[color as keyof typeof colorClasses]} animate-pulse`}>
+                  <Icon className="w-5 h-5 animate-bounce" />
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-gray-800">
+                  <p className="text-2xl font-bold text-gray-800 animate-pulse">
                     {formatValue(value, key)}
                   </p>
                   <p className="text-sm text-gray-500">{label}</p>
                 </div>
+              </div>
+              
+              {/* Activity indicator */}
+              <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span>Live</span>
+                </div>
+                <Activity className="w-3 h-3 animate-pulse" />
               </div>
             </div>
           )

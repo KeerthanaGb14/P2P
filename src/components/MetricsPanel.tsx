@@ -20,38 +20,38 @@ const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, networkStats }) =>
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
       {/* Swarm Overview */}
-      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 transform hover:scale-105 transition-all duration-300">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-800">Swarm Overview</h3>
-          <Users className="w-6 h-6 text-blue-600" />
+          <Users className="w-6 h-6 text-blue-600 animate-pulse" />
         </div>
         
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Total Peers</span>
-            <span className="font-semibold text-gray-800">{metrics.totalPeers}</span>
+            <span className="font-semibold text-gray-800 animate-pulse">{metrics.totalPeers}</span>
           </div>
           
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Seeders</span>
-            <span className="font-semibold text-green-600">{metrics.seeders}</span>
+            <span className="font-semibold text-green-600 animate-pulse">{metrics.seeders}</span>
           </div>
           
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Leechers</span>
-            <span className="font-semibold text-orange-600">{metrics.leechers}</span>
+            <span className="font-semibold text-orange-600 animate-pulse">{metrics.leechers}</span>
           </div>
           
           <div className="pt-2 border-t border-gray-200">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Completion Rate</span>
-              <span className="font-semibold text-blue-600">{metrics.completionRate.toFixed(1)}%</span>
+              <span className="font-semibold text-blue-600 animate-pulse">{metrics.completionRate.toFixed(1)}%</span>
             </div>
             <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
               <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500 animate-pulse"
                 style={{ width: `${metrics.completionRate}%` }}
               ></div>
             </div>
@@ -60,10 +60,10 @@ const MetricsPanel: React.FC<MetricsPanelProps> = ({ metrics, networkStats }) =>
       </div>
 
       {/* Performance Metrics */}
-      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 transform hover:scale-105 transition-all duration-300">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-800">Performance</h3>
-          <TrendingUp className="w-6 h-6 text-green-600" />
+          <TrendingUp className="w-6 h-6 text-green-600 animate-bounce" />
         </div>
         
         <div className="space-y-4">
