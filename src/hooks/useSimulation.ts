@@ -18,29 +18,68 @@ export function useSimulation() {
         // Get the user's session token
         const { data: { session } } = await supabase.auth.getSession()
         
-        if (!session) {
-          throw new Error('Not authenticated')
+        if (session) {
+          // Use Supabase backend with USER'S JWT token, not anon key
+          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/simulation-engine/start`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`, // Use user's JWT token
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ config }) // Remove userId - it comes from JWT
+          })
+    
+          if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'Failed to start simulation')
+          }
+    
+          const result = await response.json()
+          setCurrentRun({ ...result, config })
+          setIsRunning(true)
+          subscribeToUpdates(result.runId)
+        } else {
+          // No session available, fall back to local simulation
+          const simulation = new ANATESimulation(config)
+          setLocalSimulation(simulation)
+          setCurrentRun({
+            id: 'local-run',
+            simulation_id: 'local-sim',
+            run_number: 1,
+            config,
+            start_time: new Date().toISOString(),
+            status: 'running' as const,
+            results: {},
+            created_at: new Date().toISOString()
+          })
+          setIsRunning(true)
+          simulation.startSimulation()
+          
+          // Convert local peers to database format
+          const localPeers = simulation.getPeers().map(peer => ({
+            id: peer.id,
+            simulation_run_id: 'local-run',
+            peer_id: peer.id,
+            ip_address: peer.ip,
+            port: peer.port,
+            region: peer.region,
+            is_seeder: peer.isSeeder,
+            upload_speed: peer.uploadSpeed,
+            download_speed: peer.downloadSpeed,
+            bandwidth: peer.bandwidth,
+            stability_score: peer.stability,
+            churn_rate: peer.churnRate,
+            download_progress: peer.downloadProgress,
+            connection_time: new Date(peer.connectionTime).toISOString(),
+            last_seen: new Date().toISOString(),
+            metadata: {},
+            created_at: new Date().toISOString()
+          }))
+          setPeers(localPeers)
+          
+          // Start local simulation loop
+          startLocalSimulationLoop(simulation)
         }
-  
-        // Use Supabase backend with USER'S JWT token, not anon key
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/simulation-engine/start`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`, // Use user's JWT token
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ config }) // Remove userId - it comes from JWT
-        })
-  
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || 'Failed to start simulation')
-        }
-  
-        const result = await response.json()
-        setCurrentRun({ ...result, config })
-        setIsRunning(true)
-        subscribeToUpdates(result.runId)
       } else {
         // Use local simulation
         const simulation = new ANATESimulation(config)
