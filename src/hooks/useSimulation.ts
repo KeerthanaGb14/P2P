@@ -223,6 +223,29 @@ export function useSimulation() {
     }
   }, [currentRun, localSimulation])
 
+  // Get latest metrics aggregated by type
+  const getLatestMetrics = useCallback(() => {
+    if (Array.isArray(metrics)) {
+      // Handle array format (from local simulation)
+      const latestMetrics: { [key: string]: number } = {}
+      metrics.forEach((metric: any) => {
+        latestMetrics[metric.metric_type] = metric.value
+      })
+      return latestMetrics
+    } else {
+      // Handle object format (from Supabase)
+      const latestMetrics: { [key: string]: number } = {}
+      
+      Object.entries(metrics).forEach(([key, value]) => {
+        if (typeof value === 'number') {
+          latestMetrics[key] = value
+        }
+      })
+
+      return latestMetrics
+    }
+  }, [metrics])
+
   const subscribeToUpdates = useCallback((runId: string) => {
     if (!isSupabaseConfigured()) return
     
@@ -332,28 +355,6 @@ export function useSimulation() {
     
     return csvContent
   }, [currentRun, peers, getLatestMetrics])
-  // Get latest metrics aggregated by type
-  const getLatestMetrics = useCallback(() => {
-    if (Array.isArray(metrics)) {
-      // Handle array format (from local simulation)
-      const latestMetrics: { [key: string]: number } = {}
-      metrics.forEach((metric: any) => {
-        latestMetrics[metric.metric_type] = metric.value
-      })
-      return latestMetrics
-    } else {
-      // Handle object format (from Supabase)
-      const latestMetrics: { [key: string]: number } = {}
-      
-      Object.entries(metrics).forEach(([key, value]) => {
-        if (typeof value === 'number') {
-          latestMetrics[key] = value
-        }
-      })
-
-      return latestMetrics
-    }
-  }, [metrics])
 
   return {
     currentRun,
