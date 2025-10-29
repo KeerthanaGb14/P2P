@@ -19,7 +19,8 @@ function App() {
     loading: simLoading,
     startSimulation, 
     stopSimulation, 
-    resetSimulation 
+    resetSimulation,
+    exportSimulationDataToCsv
   } = useSimulation();
   const { researchData } = useResearchData();
   
@@ -47,6 +48,25 @@ function App() {
     resetSimulation();
   };
 
+  const handleExportCsv = () => {
+    try {
+      const csvData = exportSimulationDataToCsv();
+      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `anate-simulation-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Failed to export CSV:', error);
+      alert('Failed to export simulation data. Please ensure a simulation is running.');
+    }
+  };
   const handleConfigChange = (newConfig: SimulationConfig) => {
     setConfig(newConfig);
   };
@@ -85,6 +105,7 @@ function App() {
           onStart={handleStart}
           onStop={handleStop}
           onReset={handleReset}
+          onExportCsv={handleExportCsv}
         />
 
         {/* Real-time Metrics (when simulation is running) */}

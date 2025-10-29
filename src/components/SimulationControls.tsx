@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, RotateCcw, Settings, Users, Wifi } from 'lucide-react';
+import { Play, Pause, RotateCcw, Settings, Users, Wifi, Download } from 'lucide-react';
 import { SimulationConfig } from '../types';
 
 interface SimulationControlsProps {
@@ -10,6 +10,7 @@ interface SimulationControlsProps {
   onStart: () => void;
   onStop: () => void;
   onReset: () => void;
+  onExportCsv: () => void;
 }
 
 const SimulationControls: React.FC<SimulationControlsProps> = ({
@@ -20,6 +21,7 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
   onStart,
   onStop,
   onReset,
+  onExportCsv,
 }) => {
   const handleConfigChange = (key: keyof SimulationConfig, value: any) => {
     onConfigChange({ ...config, [key]: value });
@@ -70,6 +72,19 @@ const SimulationControls: React.FC<SimulationControlsProps> = ({
           >
             <RotateCcw className="w-4 h-4" />
             <span>Reset</span>
+          </button>
+          
+          <button
+            onClick={onExportCsv}
+            disabled={loading || !isRunning}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+              loading || !isRunning
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-blue-500 hover:bg-blue-600 text-white'
+            }`}
+          >
+            <Download className="w-4 h-4" />
+            <span>Export CSV</span>
           </button>
         </div>
       </div>

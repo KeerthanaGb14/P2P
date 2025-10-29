@@ -280,6 +280,58 @@ export function useSimulation() {
     setLocalSimulation(null)
   }, [])
 
+  const exportSimulationDataToCsv = useCallback(() => {
+    if (!currentRun || peers.length === 0) {
+      throw new Error('No simulation data available to export')
+    }
+
+    const latestMetrics = getLatestMetrics()
+    const timestamp = new Date().toISOString()
+    
+    // Build CSV content
+    let csvContent = ''
+    
+    // Simulation metadata
+    csvContent += 'ANATE Simulation Export\n'
+    csvContent += `Export Date,${timestamp}\n`
+    csvContent += `Simulation ID,${currentRun.id}\n`
+    csvContent += `Simulation Name,${currentRun.simulation_id}\n`
+    csvContent += `Start Time,${currentRun.start_time}\n`
+    csvContent += `Status,${currentRun.status}\n`
+    csvContent += '\n'
+    
+    // Configuration
+    csvContent += 'SIMULATION CONFIGURATION\n'
+    csvContent += `ANATE Enabled,${currentRun.config?.useANATE ? 'Yes' : 'No'}\n`
+    csvContent += `Peer Count,${currentRun.config?.peerCount || 0}\n`
+    csvContent += `File Size (MB),${currentRun.config?.fileSize || 0}\n`
+    csvContent += `Network Condition,${currentRun.config?.networkCondition || 'Unknown'}\n`
+    csvContent += `Simulation Speed,${currentRun.config?.simulationSpeed || 1}\n`
+    csvContent += '\n'
+    
+    // Overall metrics
+    csvContent += 'OVERALL METRICS\n'
+    csvContent += `Total Peers,${latestMetrics.total_peers || 0}\n`
+    csvContent += `Seeders,${latestMetrics.seeders || 0}\n`
+    csvContent += `Leechers,${latestMetrics.leechers || 0}\n`
+    csvContent += `Average Download Speed (KB/s),${(latestMetrics.avg_download_speed || 0).toFixed(2)}\n`
+    csvContent += `Average Upload Speed (KB/s),${(latestMetrics.avg_upload_speed || 0).toFixed(2)}\n`
+    csvContent += `Swarm Stability (%),${(latestMetrics.swarm_stability || 0).toFixed(2)}\n`
+    csvContent += `Redundant Transfers,${(latestMetrics.redundant_transfers || 0).toFixed(2)}\n`
+    csvContent += `Completion Rate (%),${(latestMetrics.completion_rate || 0).toFixed(2)}\n`
+    csvContent += '\n'
+    
+    // Peer data header
+    csvContent += 'INDIVIDUAL PEER DATA\n'
+    csvContent += 'Peer ID,IP Address,Port,Region,Is Seeder,Upload Speed (KB/s),Download Speed (KB/s),Bandwidth (KB/s),Stability Score (%),Churn Rate,Download Progress (%),Connection Time\n'
+    
+    // Peer data rows
+    peers.forEach(peer => {
+      csvContent += `${peer.peer_id},${peer.ip_address},${peer.port},${peer.region},${peer.is_seeder ? 'Yes' : 'No'},${peer.upload_speed.toFixed(2)},${peer.download_speed.toFixed(2)},${peer.bandwidth.toFixed(2)},${peer.stability_score.toFixed(2)},${peer.churn_rate.toFixed(4)},${peer.download_progress.toFixed(2)},${peer.connection_time}\n`
+    })
+    
+    return csvContent
+  }, [currentRun, peers, getLatestMetrics])
   // Get latest metrics aggregated by type
   const getLatestMetrics = useCallback(() => {
     if (Array.isArray(metrics)) {
@@ -311,6 +363,7 @@ export function useSimulation() {
     loading,
     startSimulation,
     stopSimulation,
-    resetSimulation
+    resetSimulation,
+    exportSimulationDataToCsv
   }
 }
