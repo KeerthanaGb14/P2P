@@ -184,6 +184,15 @@ export function useSimulation() {
       setSimulationInterval(null)
     }
 
+    // Handle local simulation stop
+    if (currentRun.id === 'local-run') {
+      if (localSimulation) {
+        localSimulation.stopSimulation()
+      }
+      setIsRunning(false)
+      return
+    }
+
     if (isSupabaseConfigured()) {
       try {
         // Get the user's session token
