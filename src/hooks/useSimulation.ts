@@ -10,6 +10,7 @@ export function useSimulation() {
   const [isRunning, setIsRunning] = useState(false)
   const [loading, setLoading] = useState(false)
   const [localSimulation, setLocalSimulation] = useState<ANATESimulation | null>(null)
+  const [simulationInterval, setSimulationInterval] = useState<NodeJS.Timeout | null>(null)
 
   const startSimulation = useCallback(async (config: SimulationConfig, userId: string) => {
     setLoading(true)
@@ -132,11 +133,6 @@ export function useSimulation() {
 
   const startLocalSimulationLoop = useCallback((simulation: ANATESimulation) => {
     const interval = setInterval(() => {
-      if (!isRunning) {
-        clearInterval(interval)
-        return
-      }
-      
       simulation.updateSimulation()
       
       // Update peers
@@ -176,17 +172,18 @@ export function useSimulation() {
       setMetrics(metricsData)
     }, 2000)
     
-    // Stop after 60 seconds
-    setTimeout(() => {
-      clearInterval(interval)
-      setIsRunning(false)
-      simulation.stopSimulation()
-    }, 60000)
-  }, [isRunning])
+    setSimulationInterval(interval)
+  }, [])
 
   const stopSimulation = useCallback(async () => {
     if (!currentRun) return
   
+    // Clear the simulation interval first
+    if (simulationInterval) {
+      clearInterval(simulationInterval)
+      setSimulationInterval(null)
+    }
+
     if (isSupabaseConfigured()) {
       try {
         // Get the user's session token
@@ -221,7 +218,7 @@ export function useSimulation() {
       }
       setIsRunning(false)
     }
-  }, [currentRun, localSimulation])
+  }, [currentRun, localSimulation, simulationInterval])
 
   // Get latest metrics aggregated by type
   const getLatestMetrics = useCallback(() => {
@@ -296,12 +293,18 @@ export function useSimulation() {
   }, [])
 
   const resetSimulation = useCallback(() => {
+    // Clear any running intervals
+    if (simulationInterval) {
+      clearInterval(simulationInterval)
+      setSimulationInterval(null)
+    }
+    
     setCurrentRun(null)
     setPeers([])
     setMetrics([])
     setIsRunning(false)
     setLocalSimulation(null)
-  }, [])
+  }, [simulationInterval])
 
   const exportSimulationDataToCsv = useCallback(() => {
     if (!currentRun || peers.length === 0) {
