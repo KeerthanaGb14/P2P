@@ -132,6 +132,7 @@ export function useSimulation() {
   }, [])
 
   const startLocalSimulationLoop = useCallback((simulation: ANATESimulation) => {
+    // Update every 3 seconds as requested
     const interval = setInterval(() => {
       simulation.updateSimulation()
       
@@ -170,31 +171,37 @@ export function useSimulation() {
         { metric_type: 'completion_rate', value: simMetrics.completionRate }
       ]
       setMetrics(metricsData)
-    }, 2000)
+    }, 3000) // Changed to 3 seconds as requested
     
     setSimulationInterval(interval)
   }, [])
 
   const stopSimulation = useCallback(async () => {
     if (!currentRun) return
-  
-    // Clear the simulation interval first
-    if (simulationInterval) {
-      clearInterval(simulationInterval)
-      setSimulationInterval(null)
-    }
 
     // Handle local simulation stop
     if (currentRun.id === 'local-run') {
+      // Clear the simulation interval but keep data visible
+      if (simulationInterval) {
+        clearInterval(simulationInterval)
+        setSimulationInterval(null)
+      }
       if (localSimulation) {
         localSimulation.stopSimulation()
       }
       setIsRunning(false)
+      // Don't clear currentRun, peers, or metrics - keep them visible until reset
       return
     }
 
     if (isSupabaseConfigured()) {
       try {
+        // Clear the simulation interval but keep data visible
+        if (simulationInterval) {
+          clearInterval(simulationInterval)
+          setSimulationInterval(null)
+        }
+        
         // Get the user's session token
         const { data: { session } } = await supabase.auth.getSession()
         
@@ -213,6 +220,7 @@ export function useSimulation() {
   
         if (response.ok) {
           setIsRunning(false)
+          // Don't clear currentRun, peers, or metrics - keep them visible until reset
         } else {
           const error = await response.json()
           throw new Error(error.error || 'Failed to stop simulation')
@@ -222,6 +230,10 @@ export function useSimulation() {
       }
     } else {
       // Stop local simulation
+      if (simulationInterval) {
+        clearInterval(simulationInterval)
+        setSimulationInterval(null)
+      }
       if (localSimulation) {
         localSimulation.stopSimulation()
       }

@@ -108,18 +108,18 @@ function App() {
           onExportCsv={handleExportCsv}
         />
 
-        {/* Real-time Metrics (when simulation is running) */}
-        {isRunning && currentRun && (
+        {/* Real-time Metrics (when simulation is running or has data) */}
+        {currentRun && (
           <RealTimeMetrics metrics={metrics} />
         )}
 
-        {/* Metrics Panel */}
-        {(legacyMetrics.totalPeers > 0 || isRunning) && (
+        {/* Metrics Panel (show when simulation has run or is running) */}
+        {currentRun && (
           <MetricsPanel metrics={legacyMetrics} networkStats={networkStats} />
         )}
 
-        {/* Peer Visualization */}
-        {peers.length > 0 && (
+        {/* Peer Visualization (show when simulation has run or is running) */}
+        {currentRun && peers.length > 0 && (
           <PeerVisualization peers={peers.map(peer => ({
             id: peer.peer_id,
             ip: peer.ip_address,
